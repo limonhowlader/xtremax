@@ -1,0 +1,64 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Xtremax Route53 A Record that maps to the public IP address of an EC2 instance.",
+
+  "Parameters" : {
+    "InstanceType" : {
+      "Description" : "Xtremax WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.small",
+      "AllowedValues" : [ "t1.micro", "t2.small"]
+,
+      "ConstraintDescription" : "Must be a valid EC2 Instance type."
+    },
+
+    "HostedZone" : {
+      "Type" : "String",
+      "Description" : "The Xtremax DNS name of an existing Amazon Route 53 hosted zone",
+      "AllowedPattern" : "(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)",
+      "ConstraintDescription" : "Must be a valid DNS zone name for Xtremax."
+    }
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "HVM64"  },
+      "t2.small"     : { "Arch" : "HVM64"  },
+    },
+
+    "AWSRegionArch2AMI" : {
+      "us-east-1"        : {"HVM64" : "ami-0080e4c5bc078760e", "HVMG2" : "ami-0aeb704d503081ea6"},
+      "us-west-2"        : {"HVM64" : "ami-01e24be29428c15b2", "HVMG2" : "ami-0fe84a5b4563d8f27"},
+	},
+},
+  "Resources" : {
+    "XtremaxEC2Instance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" },
+                          { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
+        "InstanceType" : { "Ref" : "InstanceType" }
+      }
+    },
+
+    "XtremaxDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : { "Fn::Join" : [ "", [{"Ref" : "HostedZone"}, "." ]]},
+        "Comment" : "DNS name for our Xtremax EC2 Instance.",
+        "Name" : { "Fn::Join" : [ "", [{"Ref" : "XtremaxEC2Instance"}, ".", {"Ref" : "AWS::Region"}, ".", {"Ref" : "HostedZone"} ,"."]]},
+        "Type" : "A",
+        "TTL" : "900",
+        "ResourceRecords" : [ { "Fn::GetAtt" : [ "XtremaxEC2Instance", "PublicIp" ] } ]
+      }
+    }
+  },
+
+  "Outputs" : {
+    "DomainName" : {
+      "Description" : "Please enter here Xtremax Fully Qualified Domain Name",
+      "Value" : { "Ref" : "XtremaxDNSRecord" }
+    }
+  }
+}

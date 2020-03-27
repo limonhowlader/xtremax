@@ -1,0 +1,31 @@
+
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Xtremax S3 Bucket With Retain On Delete",
+
+  "Resources" : {
+    "XtremaxS3Bucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "PublicRead",
+        "WebsiteConfiguration" : {
+          "IndexDocument" : "index.html",
+          "ErrorDocument" : "error.html"
+         }
+      },
+      "DeletionPolicy" : "Retain"
+    }
+  },
+
+  "Outputs" : {
+    "WebsiteURL" : {
+      "Value" : { "Fn::GetAtt" : [ "XtremaxS3Bucket", "WebsiteURL" ] },
+      "Description" : "URL for website hosted on AWS S3"
+    },
+    "S3BucketSecureURL" : {
+      "Value" : { "Fn::Join" : [ "", [ "https://", { "Fn::GetAtt" : [ "XtremaxS3Bucket", "DomainName" ] } ] ] },
+      "Description" : "Name of the AWS S3 bucket to hold website content"
+    }
+  }
+}
